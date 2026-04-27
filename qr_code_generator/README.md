@@ -4,8 +4,10 @@ A dynamic QR code system built with Python + FastAPI (backend) and React + TypeS
 
 ## Demo
 
+### Image
 ![QR Code Generator Screenshot](images/qr-generator-demo.png)
 
+### Video
 <video src="images/qr-generator-demo-video.mov" controls width="100%"></video>
 
 ---
