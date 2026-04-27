@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -8,5 +9,8 @@ export default defineConfig({
       '/api': 'http://localhost:8000',
       '/r': 'http://localhost:8000',
     },
+  },
+  test: {
+    environment: 'node',
   },
 })
