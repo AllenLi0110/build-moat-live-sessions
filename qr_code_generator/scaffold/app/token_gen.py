@@ -1,5 +1,4 @@
 import hashlib
-import os
 import string
 import time
 
@@ -13,6 +12,7 @@ MAX_RETRIES = 10
 
 
 def base62_encode(data: bytes) -> str:
+    """Convert bytes to Base62 string."""
     num = int.from_bytes(data, "big")
     if num == 0:
         return BASE62_CHARS[0]
@@ -28,11 +28,15 @@ def token_exists_in_db(db: Session, token: str) -> bool:
 
 
 def generate_token(url: str, db: Session) -> str:
-    for _ in range(MAX_RETRIES):
-        nonce = os.urandom(8).hex()
-        ts = str(time.time_ns())
-        digest = hashlib.sha256(f"{url}{nonce}{ts}".encode()).digest()
-        token = base62_encode(digest)[:TOKEN_LENGTH]
-        if not token_exists_in_db(db, token):
-            return token
-    raise RuntimeError("Failed to generate a unique token after max retries")
+    """SHA-256 + nonce + Base62 token generation with collision retry."""
+    # TODO: Implement this function
+    #
+    # Design decision: hash-based tokens give us short, deterministic-ish IDs,
+    # but we must handle collisions as the table grows.
+    #
+    # Hints:
+    # 1. Loop up to MAX_RETRIES. Each attempt: hash (url + a varying nonce)
+    #    with SHA-256, pass the digest to base62_encode(), truncate to TOKEN_LENGTH.
+    # 2. Use token_exists_in_db() to check for collisions — return on the first
+    #    free token, raise RuntimeError if all retries are exhausted.
+    raise NotImplementedError("generate_token() is not yet implemented")

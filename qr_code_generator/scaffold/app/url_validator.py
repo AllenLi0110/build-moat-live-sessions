@@ -1,4 +1,4 @@
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 MAX_URL_LENGTH = 2048
 
@@ -16,25 +16,15 @@ def is_blocked_domain(hostname: str | None) -> bool:
 
 
 def validate_url(url: str) -> str:
-    if len(url) > MAX_URL_LENGTH:
-        raise ValueError("URL exceeds maximum length of 2048 characters")
-
-    parsed = urlparse(url)
-
-    if parsed.scheme not in ("http", "https"):
-        raise ValueError("URL must use http or https scheme")
-
-    if is_blocked_domain(parsed.hostname):
-        raise ValueError(f"Domain '{parsed.hostname}' is blocked")
-
-    # Normalize: upgrade to https, lowercase netloc, strip trailing slash
-    path = parsed.path.rstrip("/")
-    normalized = urlunparse((
-        "https",
-        parsed.netloc.lower(),
-        path,
-        parsed.params,
-        parsed.query,
-        parsed.fragment,
-    ))
-    return normalized
+    """Format check, normalization, and blocklist validation."""
+    # TODO: Implement this function
+    #
+    # Design decision: normalization keeps the same destination URL mapping to
+    # the same token (no duplicates); blocklist validation prevents short links
+    # from becoming phishing vectors.
+    #
+    # Hints:
+    # 1. Validate: length within MAX_URL_LENGTH, scheme is http/https via
+    #    urlparse(), hostname is not in is_blocked_domain(). Raise ValueError otherwise.
+    # 2. Normalize and return: lowercase, strip trailing slash, upgrade http→https.
+    raise NotImplementedError("validate_url() is not yet implemented")
