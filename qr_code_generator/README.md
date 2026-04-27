@@ -1,48 +1,120 @@
-# QR Code Generator — Exercise
+# QR Code Generator
 
-## How to Use
+A dynamic QR code system built with Python + FastAPI (backend) and React + TypeScript (frontend).
 
-1. Read `PROMPT.md`
-2. Answer the Design Questions (write your answers directly in `PROMPT.md`)
-3. Build the prototype:
-   - **Challenge Track:** Build from scratch using `PROMPT.md` as your spec
-   - **Guided Track:** Go to `scaffold/`, fill in the TODOs
-4. Verify with the curl tests at the bottom of `PROMPT.md`
-5. Bring your Design Questions answers to live session for discussion
+## Demo
 
-## Choose Your Track
+### Image
+![QR Code Generator Screenshot](images/qr-generator-demo.png)
 
-**Challenge Track** — You decide the architecture, file structure, and implementation. Any language/framework is OK (Python + FastAPI recommended). Read `PROMPT.md` to get started.
+### Video
+<video src="images/qr-generator-demo-video.mov" controls width="100%"></video>
 
-**Guided Track** — File structure and boilerplate are provided. Fill in the core logic marked with `TODO`. Go to `scaffold/` and follow the instructions below.
+---
 
-## Guided Track Setup
+## Features
+
+- Submit a long URL → receive a short URL token + QR code image
+- QR code encodes the short URL which 302-redirects to the original URL
+- Update the target URL after creation
+- Soft delete (returns 410 on redirect)
+- Optional expiration timestamp with live countdown
+- In-memory cache (cache-first redirect strategy)
+- Scan analytics (total count + per-day breakdown)
+- URL validation: length check, scheme check, blocklist, normalization
+
+---
+
+## Tech Stack
+
+| Layer    | Technology                        |
+|----------|-----------------------------------|
+| Backend  | Python 3.10+, FastAPI, SQLAlchemy |
+| Database | SQLite                            |
+| Frontend | React 18, TypeScript, Vite        |
+| QR       | qrcode[pil]                       |
+
+---
+
+## Project Structure
+
+```
+scaffold/
+├── app/
+│   ├── main.py          # FastAPI app, CORS, static file serving
+│   ├── database.py      # SQLAlchemy engine + session
+│   ├── models.py        # UrlMapping, ScanEvent
+│   ├── schemas.py       # Pydantic request/response types
+│   ├── routes.py        # All API endpoints
+│   ├── token_gen.py     # SHA-256 + Base62 token generation
+│   └── url_validator.py # URL validation + normalization
+├── frontend/
+│   └── src/
+│       └── App.tsx      # Single-page React UI
+└── requirements.txt
+```
+
+---
+
+## Getting Started
+
+**Prerequisites:** Python 3.10+, Node.js 18+
 
 ```bash
 cd scaffold
+```
+
+**Backend**
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Files to Fill In
-
-| File | TODO | Design Decision |
-|------|------|-----------------|
-| `app/token_gen.py` | `generate_token()` | How to generate unique, URL-safe short tokens |
-| `app/url_validator.py` | `validate_url()` | URL normalization and malicious URL blocking |
-| `app/routes.py` | `redirect()` | Cache → DB lookup → 410/404 fallback flow |
-
-### Run and Verify
+**Frontend**
 
 ```bash
-uvicorn app.main:app --reload
+cd frontend
+npm install
+npm run dev        # dev mode (port 5173, proxies to :8000)
 ```
 
-Then run the verification tests from `PROMPT.md`.
+**Start backend**
 
-## Bonus Challenges
+```bash
+uvicorn app.main:app --reload --port 8000
+```
 
-- Build a simple frontend (input URL → display QR code image)
-- Add rate limiting to the create endpoint
-- Add expiration support with automatic 410 responses
+Open `http://localhost:5173` in your browser.
+
+---
+
+## API Reference
+
+| Method   | Path                        | Description                              |
+|----------|-----------------------------|------------------------------------------|
+| `POST`   | `/api/qr/create`            | Create QR code, returns token + URLs     |
+| `GET`    | `/r/{token}`                | 302 redirect (410 if deleted/expired)    |
+| `GET`    | `/api/qr/{token}`           | Get mapping info                         |
+| `PATCH`  | `/api/qr/{token}`           | Update target URL and/or expiry          |
+| `DELETE` | `/api/qr/{token}`           | Soft delete                              |
+| `GET`    | `/api/qr/{token}/image`     | QR code PNG image                        |
+| `GET`    | `/api/qr/{token}/analytics` | Total scans + per-day breakdown          |
+| `GET`    | `/api/qr/{token}/check`     | Check redirect status without recording scan |
+
+**404 vs 410:** `/r/{token}` returns 410 for deleted or expired tokens, 404 for tokens that never existed.
+
+---
+
+## Exercise Track
+
+This project was built as a guided coding exercise. The original scaffold contained three TODOs:
+
+| File              | TODO                | Concept                              |
+|-------------------|---------------------|--------------------------------------|
+| `token_gen.py`    | `generate_token()`  | SHA-256 + Base62 + collision retry   |
+| `url_validator.py`| `validate_url()`    | Normalization + blocklist            |
+| `routes.py`       | `redirect()`        | Cache → DB → 302 / 410 / 404         |
+
+Design questions and answers are in `PROMPT.md`.

@@ -9,6 +9,13 @@ venv/
 # SQLite
 *.db
 
+# Node
+node_modules/
+dist/
+
+# Claude Code
+.claude/
+
 # Editor / OS
 .DS_Store
 .vscode/
