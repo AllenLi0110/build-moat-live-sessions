@@ -15,15 +15,19 @@ from .url_validator import validate_url
 
 router = APIRouter()
 
-# In-memory cache (simulates Redis for prototype)
-redirect_cache: dict[str, str] = {}
+# In-memory cache: token -> (original_url, expires_at)
+redirect_cache: dict = {}
 
 BASE_URL = "http://localhost:8000"
 
 
 @router.post("/api/qr/create", response_model=CreateResponse)
 def create_qr(req: CreateRequest, db: Session = Depends(get_db)):
-    normalized_url = validate_url(req.url)
+    try:
+        normalized_url = validate_url(req.url)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
     token = generate_token(normalized_url, db)
 
     mapping = UrlMapping(
@@ -35,9 +39,7 @@ def create_qr(req: CreateRequest, db: Session = Depends(get_db)):
     db.commit()
 
     short_url = f"{BASE_URL}/r/{token}"
-
-    # Warm cache
-    redirect_cache[token] = normalized_url
+    redirect_cache[token] = (normalized_url, req.expires_at)
 
     return CreateResponse(
         token=token,
@@ -49,25 +51,34 @@ def create_qr(req: CreateRequest, db: Session = Depends(get_db)):
 
 @router.get("/r/{token}")
 def redirect(token: str, request: Request, db: Session = Depends(get_db)):
-    """Redirect fallback flow: Cache -> DB -> 404/410 (from slides mermaid diagram)"""
-    # TODO: Implement this function
-    #
-    # Design decision: the redirect path is the hottest path in the system, so
-    # we use a cache-first strategy (Cache -> DB -> 404/410) to minimize DB load
-    # while still handling soft-deleted and expired links.
-    #
-    # Hints:
-    # 1. Check redirect_cache first — on hit, call _record_scan() and return
-    #    RedirectResponse(status_code=302).
-    # 2. On miss, query the DB: raise 404 if not found, 410 if is_deleted or
-    #    past expires_at; otherwise warm the cache, _record_scan(), and 302.
-    raise NotImplementedError("redirect() is not yet implemented")
+    # Cache-first: cache -> DB -> 302/410/404
+    if token in redirect_cache:
+        cached_url, cached_expires = redirect_cache[token]
+        if cached_expires is not None and cached_expires < datetime.utcnow():
+            redirect_cache.pop(token, None)
+            raise HTTPException(status_code=410, detail="Gone — link expired")
+        _record_scan(token, request, db)
+        return RedirectResponse(url=cached_url, status_code=302)
+
+    mapping = db.query(UrlMapping).filter(UrlMapping.token == token).first()
+
+    if mapping is None:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    if mapping.is_deleted:
+        raise HTTPException(status_code=410, detail="Gone")
+
+    if mapping.expires_at is not None and mapping.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=410, detail="Gone — link expired")
+
+    redirect_cache[token] = (mapping.original_url, mapping.expires_at)
+    _record_scan(token, request, db)
+    return RedirectResponse(url=mapping.original_url, status_code=302)
 
 
 @router.get("/api/qr/{token}", response_model=QRInfoResponse)
 def get_qr_info(token: str, db: Session = Depends(get_db)):
-    mapping = _get_mapping_or_404(token, db)
-    return mapping
+    return _get_mapping_or_404(token, db)
 
 
 @router.patch("/api/qr/{token}", response_model=QRInfoResponse)
@@ -75,12 +86,16 @@ def update_qr(token: str, req: UpdateRequest, db: Session = Depends(get_db)):
     mapping = _get_mapping_or_404(token, db)
 
     if req.url is not None:
-        mapping.original_url = validate_url(req.url)
-        # Invalidate cache
-        redirect_cache.pop(token, None)
+        try:
+            mapping.original_url = validate_url(req.url)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
 
     if req.expires_at is not None:
         mapping.expires_at = req.expires_at
+
+    # Invalidate so the next redirect re-reads updated url and expires_at
+    redirect_cache.pop(token, None)
 
     db.commit()
     db.refresh(mapping)
@@ -92,9 +107,20 @@ def delete_qr(token: str, db: Session = Depends(get_db)):
     mapping = _get_mapping_or_404(token, db)
     mapping.is_deleted = True
     db.commit()
-    # Invalidate cache
     redirect_cache.pop(token, None)
     return {"detail": "Deleted"}
+
+
+@router.get("/api/qr/{token}/check")
+def check_redirect(token: str, db: Session = Depends(get_db)):
+    mapping = db.query(UrlMapping).filter(UrlMapping.token == token).first()
+    if mapping is None:
+        return {"status": 404}
+    if mapping.is_deleted:
+        return {"status": 410}
+    if mapping.expires_at is not None and mapping.expires_at < datetime.utcnow():
+        return {"status": 410}
+    return {"status": 302}
 
 
 @router.get("/api/qr/{token}/image")
@@ -139,7 +165,7 @@ def _get_mapping_or_404(token: str, db: Session) -> UrlMapping:
     return mapping
 
 
-def _record_scan(token: str, request: Request, db: Session):
+def _record_scan(token: str, request: Request, db: Session) -> None:
     event = ScanEvent(
         token=token,
         user_agent=request.headers.get("user-agent"),
