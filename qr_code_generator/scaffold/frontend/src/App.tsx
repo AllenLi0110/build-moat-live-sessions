@@ -1,19 +1,12 @@
 import { useState, useEffect } from 'react'
+import { deriveStatus, fmtDate } from './utils'
+import type { QRInfo } from './utils'
 
 interface CreateResponse {
   token: string
   short_url: string
   qr_code_url: string
   original_url: string
-}
-
-interface QRInfo {
-  token: string
-  original_url: string
-  created_at: string
-  updated_at: string
-  expires_at: string | null
-  is_deleted: boolean
 }
 
 interface Analytics {
@@ -88,10 +81,7 @@ export default function App() {
   const [redirectStatus, setRedirectStatus] = useState<number | null>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
 
-  const status: 'active' | 'expired' | 'deleted' =
-    info?.is_deleted ? 'deleted'
-    : info?.expires_at && new Date(info.expires_at) < new Date() ? 'expired'
-    : 'active'
+  const status = deriveStatus(info)
 
   useEffect(() => {
     if (!info?.expires_at || info.is_deleted) { setCountdown(null); return }
@@ -152,9 +142,6 @@ export default function App() {
     const res = await fetch(`/api/qr/${qrData.token}/check`)
     if (res.ok) setRedirectStatus((await res.json()).status)
   }
-
-  const fmtDate = (s: string) =>
-    new Date(s).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 
   const redirectColor = redirectStatus === 302 ? C.green : redirectStatus === 410 ? C.red : redirectStatus === 404 ? C.amber : C.muted
 
