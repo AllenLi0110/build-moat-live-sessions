@@ -60,9 +60,29 @@ After completing all TODOs and creating the frontend, run:
 ```bash
 cd scaffold
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+cp .env.example .env          # configure BASE_URL if needed (see Environment below)
 cd frontend && npm install && npm run build && cd ..
 uvicorn app.main:app --reload --port 8000
 ```
+
+## Environment
+
+The backend reads `BASE_URL` from `scaffold/.env` (loaded automatically via `python-dotenv`).
+This value is embedded into every generated short URL and QR code.
+
+| Variable   | Default                    | Purpose                                    |
+|------------|----------------------------|--------------------------------------------|
+| `BASE_URL` | `http://localhost:8000`    | Publicly reachable address of the backend  |
+
+**To allow phone scanning on a LAN (e.g. laptop hotspot):**
+
+1. Find your laptop's LAN IP: `ipconfig getifaddr en0`
+2. Set `BASE_URL=http://<your-lan-ip>:8000` in `scaffold/.env`
+3. Start the backend with `--host 0.0.0.0`: `uvicorn app.main:app --reload --port 8000 --host 0.0.0.0`
+4. Start the frontend with `--host`: `npm run dev -- --host`
+5. Open `http://<your-lan-ip>:5173` from your phone's browser
+
+`.env` is git-ignored. Never commit it. Use `scaffold/.env.example` as the template.
 
 Then verify all curl tests from the spec pass: create, redirect (302), get info, update, redirect to new URL, delete, redirect after delete (410), non-existent token (404), QR image (200 image/png), analytics.
 

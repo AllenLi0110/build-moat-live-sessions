@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.db
+
+# Environment
+.env
+
+# Frontend build
+scaffold/frontend/dist/
+scaffold/frontend/node_modules/
