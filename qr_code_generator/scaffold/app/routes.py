@@ -1,7 +1,9 @@
 import io
+import os
 from datetime import datetime
 
 import qrcode
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, StreamingResponse
 from sqlalchemy import func
@@ -13,12 +15,14 @@ from .schemas import CreateRequest, CreateResponse, QRInfoResponse, UpdateReques
 from .token_gen import generate_token
 from .url_validator import validate_url
 
+load_dotenv()
+
 router = APIRouter()
 
 # In-memory cache: token -> (original_url, expires_at)
 redirect_cache: dict = {}
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
 
 
 @router.post("/api/qr/create", response_model=CreateResponse)

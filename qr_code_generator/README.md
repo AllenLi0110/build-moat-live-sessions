@@ -72,21 +72,36 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+**Environment**
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` if needed. The default works for local dev on the same machine.
+If you want to scan the QR code from a phone on the same network, set `BASE_URL`
+to your laptop's LAN IP (e.g. `http://192.168.1.42:8000`) and start the backend
+with `--host 0.0.0.0` (see below).
+
 **Frontend**
 
 ```bash
 cd frontend
 npm install
-npm run dev        # dev mode (port 5173, proxies to :8000)
+npm run dev -- --host   # exposes dev server on LAN (port 5173)
 ```
 
 **Start backend**
 
 ```bash
+# Default (localhost only)
 uvicorn app.main:app --reload --port 8000
+
+# LAN-accessible — required when scanning QR code from a phone
+uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
 ```
 
-Open `http://localhost:5173` in your browser.
+Open `http://localhost:5173` in your browser (or `http://<your-lan-ip>:5173` from a phone).
 
 ---
 
