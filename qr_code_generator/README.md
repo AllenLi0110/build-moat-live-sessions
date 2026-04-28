@@ -79,9 +79,18 @@ cp .env.example .env
 ```
 
 Edit `.env` if needed. The default works for local dev on the same machine.
-If you want to scan the QR code from a phone on the same network, set `BASE_URL`
-to your laptop's LAN IP (e.g. `http://192.168.1.42:8000`) and start the backend
-with `--host 0.0.0.0` (see below).
+If you want to scan the QR code from a phone on the same network:
+
+```bash
+# 1. Find your laptop's LAN IP
+ipconfig getifaddr en0    # Wi-Fi
+ipconfig getifaddr en1    # Ethernet (try if en0 returns nothing)
+
+# 2. Set BASE_URL in .env to that IP on port 8000
+#    e.g. BASE_URL=http://192.168.1.42:8000
+```
+
+Then start the backend with `--host 0.0.0.0` (see below).
 
 **Frontend**
 
