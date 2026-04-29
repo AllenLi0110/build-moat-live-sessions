@@ -153,7 +153,7 @@ export default function App() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
             <span style={{ fontFamily: 'monospace', fontSize: 18, color: C.green, marginRight: 8 }}>$</span>
-            <span style={{ fontSize: 18, fontWeight: 700 }}>qr-generator</span>
+            <span style={{ fontSize: 18, fontWeight: 700 }}>qr-code-generator</span>
             <span style={{ color: C.muted, fontSize: 16, marginLeft: 10 }}>— dynamic link manager</span>
           </div>
           {info && <StatusBadge status={status} />}
