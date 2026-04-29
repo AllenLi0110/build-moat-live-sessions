@@ -48,7 +48,7 @@ def create_qr(req: CreateRequest, db: Session = Depends(get_db)):
     return CreateResponse(
         token=token,
         short_url=short_url,
-        qr_code_url=f"{BASE_URL}/api/qr/{token}/image",
+        qr_code_url=f"/api/qr/{token}/image",
         original_url=normalized_url,
     )
 
