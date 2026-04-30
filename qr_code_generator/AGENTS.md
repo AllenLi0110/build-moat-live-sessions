@@ -27,7 +27,7 @@ Build a QR Code Generator prototype based on the following spec.
 
 **requirements.txt:** Already exists at `scaffold/requirements.txt` — do not create a new one.
 
-**Frontend** (single-page, one `App.tsx` file): URL input field + Generate button that calls `POST /api/qr/create`. On success, display: the QR code image (via `/api/qr/{token}/image`), the token, the short URL, the original URL target. Show an info panel with created_at, updated_at, expires_at, is_deleted. Show a live countdown timer if expires_at is set, turning red under 10 seconds. Show an Update section (new URL input + PATCH button that resets expiry to +1 minute). Show a Load Analytics button that calls `/api/qr/{token}/analytics` and displays total scans and a per-day breakdown. Show a Delete button that calls `DELETE /api/qr/{token}` and updates UI to show "Deleted — redirect returns 410". Show a Test Redirect button that fetches `/r/{token}` with `redirect: 'manual'` and displays the HTTP status code badge. Status indicator in the header showing Active / Expired / Deleted with color coding.
+**Frontend** (single-page, one `App.tsx` file): URL input field + Generate button that calls `POST /api/qr/create`. Before any QR code is generated, display a feature-list panel below the input that lists the five key capabilities (short token + QR code, 302 redirect, analytics, expiry + soft delete, in-memory cache). This panel disappears as soon as a QR code is successfully generated and is replaced by the result panel. On success, display: the QR code image (via `/api/qr/{token}/image`), the token, the short URL, the original URL target. Show an info panel with created_at, updated_at, expires_at, is_deleted. Show a live countdown timer if expires_at is set, turning red under 10 seconds. Show an Update section (new URL input + PATCH button that resets expiry to +1 minute). Show a Load Analytics button that calls `/api/qr/{token}/analytics` and displays total scans and a per-day breakdown. Show a Delete button that calls `DELETE /api/qr/{token}` and updates UI to show "Deleted — redirect returns 410". Show a Test Redirect button that fetches `/r/{token}` with `redirect: 'manual'` and displays the HTTP status code badge. Status indicator in the header showing Active / Expired / Deleted with color coding.
 
 **Frontend Layout:** All content must be visible on a single screen without vertical scrolling. Use a structured grid layout:
 - Row 1 — Header: app title on the left, status badge (Active / Expired / Deleted) on the right.
@@ -53,36 +53,26 @@ Use compact font sizes (13–14px) and tight spacing so the full interface fits 
 - QR code panel: white background island (invert filter not needed — QR must stay readable)
 - Do NOT use gradients, drop shadows, rounded corners larger than 6px, or bright saturated fills
 
-**vite.config.ts:** Proxy `/api` and `/r` to `http://localhost:8000` for local dev.
+**vite.config.ts:** Proxy `/api` and `/r` to `http://localhost:8000` for local dev. Use `changeOrigin: false` so the original `Host` header is forwarded to FastAPI — this lets `request.base_url` correctly reflect the address the browser actually used (localhost or LAN IP), which is then embedded in the generated short URL and QR code.
 
 After completing all TODOs and creating the frontend, run:
 
 ```bash
 cd scaffold
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-cp .env.example .env          # configure BASE_URL if needed (see Environment below)
 cd frontend && npm install && npm run build && cd ..
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## Environment
 
-The backend reads `BASE_URL` from `scaffold/.env` (loaded automatically via `python-dotenv`).
-This value is embedded into every generated short URL and QR code.
-
-| Variable   | Default                    | Purpose                                    |
-|------------|----------------------------|--------------------------------------------|
-| `BASE_URL` | `http://localhost:8000`    | Publicly reachable address of the backend  |
+**No `BASE_URL` configuration required.** The backend derives the base URL dynamically from the incoming HTTP request (`request.base_url`), so the generated short URL and QR code always reflect the address the client actually used — localhost, LAN IP, or any reverse proxy — without any env-var changes.
 
 **To allow phone scanning on a LAN (e.g. laptop hotspot):**
 
-1. Find your laptop's LAN IP: `ipconfig getifaddr en0`
-2. Set `BASE_URL=http://<your-lan-ip>:8000` in `scaffold/.env`
-3. Start the backend with `--host 0.0.0.0`: `uvicorn app.main:app --reload --port 8000 --host 0.0.0.0`
-4. Start the frontend with `--host`: `npm run dev -- --host`
-5. Open `http://<your-lan-ip>:5173` from your phone's browser
-
-`.env` is git-ignored. Never commit it. Use `scaffold/.env.example` as the template.
+1. Start the backend with `--host 0.0.0.0`: `uvicorn app.main:app --reload --port 8000 --host 0.0.0.0`
+2. Start the frontend with `--host`: `npm run dev -- --host`
+3. Open `http://<your-lan-ip>:5173` from your phone's browser — the generated QR code will automatically encode that LAN address.
 
 Then verify all curl tests from the spec pass: create, redirect (302), get info, update, redirect to new URL, delete, redirect after delete (410), non-existent token (404), QR image (200 image/png), analytics.
 
