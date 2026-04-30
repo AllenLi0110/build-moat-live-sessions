@@ -1,9 +1,7 @@
 import io
-import os
 from datetime import datetime
 
 import qrcode
-from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, StreamingResponse
 from sqlalchemy import func
@@ -15,18 +13,20 @@ from .schemas import CreateRequest, CreateResponse, QRInfoResponse, UpdateReques
 from .token_gen import generate_token
 from .url_validator import validate_url
 
-load_dotenv()
-
 router = APIRouter()
 
 # In-memory cache: token -> (original_url, expires_at)
 redirect_cache: dict = {}
 
-BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
+
+def _base_url(request: Request) -> str:
+    """Derive base URL from the incoming request so short links always match
+    the address the client actually used — localhost, LAN IP, or any proxy."""
+    return str(request.base_url).rstrip("/")
 
 
 @router.post("/api/qr/create", response_model=CreateResponse)
-def create_qr(req: CreateRequest, db: Session = Depends(get_db)):
+def create_qr(req: CreateRequest, request: Request, db: Session = Depends(get_db)):
     try:
         normalized_url = validate_url(req.url)
     except ValueError as e:
@@ -42,7 +42,8 @@ def create_qr(req: CreateRequest, db: Session = Depends(get_db)):
     db.add(mapping)
     db.commit()
 
-    short_url = f"{BASE_URL}/r/{token}"
+    base = _base_url(request)
+    short_url = f"{base}/r/{token}"
     redirect_cache[token] = (normalized_url, req.expires_at)
 
     return CreateResponse(
@@ -128,9 +129,9 @@ def check_redirect(token: str, db: Session = Depends(get_db)):
 
 
 @router.get("/api/qr/{token}/image")
-def get_qr_image(token: str, db: Session = Depends(get_db)):
+def get_qr_image(token: str, request: Request, db: Session = Depends(get_db)):
     _get_mapping_or_404(token, db)
-    short_url = f"{BASE_URL}/r/{token}"
+    short_url = f"{_base_url(request)}/r/{token}"
 
     img = qrcode.make(short_url)
     buf = io.BytesIO()
