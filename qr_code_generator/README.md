@@ -60,57 +60,46 @@ scaffold/
 
 **Prerequisites:** Python 3.10+, Node.js 18+
 
+No environment variables or `.env` configuration required. The backend detects the correct base URL from each incoming request automatically.
+
+**1. Install dependencies**
+
 ```bash
 cd scaffold
-```
-
-**Backend**
-
-```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+cd frontend && npm install && cd ..
 ```
 
-**Environment**
+**2. Start the backend**
 
 ```bash
-cp .env.example .env
+# from scaffold/
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Edit `.env` if needed. The default works for local dev on the same machine.
-If you want to scan the QR code from a phone on the same network:
+**3. Start the frontend dev server**
 
 ```bash
-# 1. Find your laptop's LAN IP
-ipconfig getifaddr en0    # Wi-Fi
-ipconfig getifaddr en1    # Ethernet (try if en0 returns nothing)
-
-# 2. Set BASE_URL in .env to that IP on port 8000
-#    e.g. BASE_URL=http://192.168.1.42:8000
+# from scaffold/frontend/
+npm run dev -- --host
 ```
 
-Then start the backend with `--host 0.0.0.0` (see below).
+**4. Open the app**
 
-**Frontend**
+| Goal | URL to open |
+|------|-------------|
+| Desktop only | `http://localhost:5173` |
+| QR scannable from phone | `http://<your-lan-ip>:5173` |
 
+To find your LAN IP:
 ```bash
-cd frontend
-npm install
-npm run dev -- --host   # exposes dev server on LAN (port 5173)
+ipconfig getifaddr en0   # Wi-Fi
+ipconfig getifaddr en1   # Ethernet
 ```
 
-**Start backend**
-
-```bash
-# Default (localhost only)
-uvicorn app.main:app --reload --port 8000
-
-# LAN-accessible — required when scanning QR code from a phone
-uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
-```
-
-Open `http://localhost:5173` in your browser (or `http://<your-lan-ip>:5173` from a phone).
+> Open the app from the LAN IP when you want QR codes to be scannable from a phone. The short URL embedded in the QR code mirrors whatever address your browser used to open the app — no configuration needed.
 
 ---
 

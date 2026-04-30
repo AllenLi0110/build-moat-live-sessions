@@ -173,6 +173,27 @@ export default function App() {
         </div>
         {error && <div style={{ color: C.red, fontSize: 16, fontFamily: 'monospace', marginBottom: 8 }}>✗ {error}</div>}
 
+        {!qrData && (
+          <div style={{ marginTop: 20, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+            {([
+              ['short token + QR code',        'URL →'],
+              ['302 redirect, update anytime',  'Scan →'],
+              ['count + per-day',               'Analytics'],
+              ['expiry + soft delete (410)',     'Expiration'],
+              ['fast redirects',                'In-memory cache →'],
+            ] as [string, string][]).map(([desc, label], i, arr) => (
+              <div key={label} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '11px 16px',
+                borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : undefined,
+              }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 14, color: C.green, minWidth: 160, flexShrink: 0 }}>{label}</span>
+                <span style={{ color: C.muted, fontSize: 15 }}>{desc}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {qrData && info && (
           <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden', marginTop: 16 }}>
 
