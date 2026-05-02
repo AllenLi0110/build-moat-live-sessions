@@ -36,6 +36,131 @@ A dynamic QR code system built with Python + FastAPI (backend) and React + TypeS
 
 ---
 
+## System Design
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Client Devices                            │
+│                                                                  │
+│   ┌──────────────────────────┐    ┌────────────────────────┐    │
+│   │   Browser / React SPA    │    │   Phone (QR Scanner)   │    │
+│   │   :5173 dev / :8000 prod │    │   follows short URL    │    │
+│   └────────────┬─────────────┘    └───────────┬────────────┘    │
+└────────────────┼──────────────────────────────┼─────────────────┘
+                 │  REST API calls               │  GET /r/{token}
+                 ▼                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               FastAPI Server  (Uvicorn :8000)                    │
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  CORS Middleware  +  Static Files (frontend/dist)         │  │
+│  └───────────────────────────┬───────────────────────────────┘  │
+│                              │                                   │
+│  ┌───────────────────────────▼───────────────────────────────┐  │
+│  │  Router  (routes.py)                                      │  │
+│  │                                                           │  │
+│  │  POST /api/qr/create  ──► url_validator ──► token_gen     │  │
+│  │  GET  /api/qr/{token}       info lookup                   │  │
+│  │  PATCH /api/qr/{token} ──► url_validator                  │  │
+│  │  DELETE /api/qr/{token}     soft delete                   │  │
+│  │  GET  /api/qr/{token}/image ──► qrcode.make() → PNG       │  │
+│  │  GET  /api/qr/{token}/analytics  scan stats               │  │
+│  │  GET  /r/{token}  ──────────────────────────────────┐     │  │
+│  └─────────────────────────────────────────────────────┼─────┘  │
+│                                                        │         │
+│  ┌─────────────────────────┐    ┌─────────────────────▼──────┐  │
+│  │   In-Memory Cache       │    │   Cache-First Redirect     │  │
+│  │   (process-scoped dict) │◄───│   1. check cache           │  │
+│  │                         │    │   2. miss → query DB       │  │
+│  │   token → (url,         │    │   3. populate cache        │  │
+│  │           expires_at)   │    │   4. record ScanEvent      │  │
+│  └─────────────────────────┘    │   5. 302 / 410 / 404       │  │
+│                                 └────────────────────────────┘  │
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  SQLAlchemy ORM  ──►  SQLite  (qr_codes.db)               │  │
+│  │                                                           │  │
+│  │   url_mappings                  scan_events               │  │
+│  │   ─────────────────────         ───────────────────────   │  │
+│  │   id            PK INT          id          PK INT        │  │
+│  │   token         UNIQUE VARCHAR  token       VARCHAR       │  │
+│  │   original_url  TEXT            scanned_at  DATETIME      │  │
+│  │   expires_at    DATETIME NULL   user_agent  VARCHAR NULL  │  │
+│  │   is_deleted    BOOLEAN         ip_address  VARCHAR NULL  │  │
+│  │   created_at    DATETIME                                   │  │
+│  │   updated_at    DATETIME                                   │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow: Create QR Code
+
+```
+Browser                    FastAPI                   SQLite
+   │                          │                         │
+   │  POST /api/qr/create     │                         │
+   │  { url, expires_at? }    │                         │
+   │─────────────────────────►│                         │
+   │                          │  validate_url()         │
+   │                          │  normalize + blocklist  │
+   │                          │                         │
+   │                          │  generate_token()       │
+   │                          │  SHA-256 + Base62(8)    │
+   │                          │  retry on collision     │
+   │                          │                         │
+   │                          │  INSERT url_mappings    │
+   │                          │────────────────────────►│
+   │                          │                         │
+   │                          │  populate redirect_cache│
+   │                          │                         │
+   │  { token, short_url,     │                         │
+   │    qr_code_url,          │                         │
+   │    original_url }        │                         │
+   │◄─────────────────────────│                         │
+   │                          │                         │
+   │  GET /api/qr/{token}/image                         │
+   │─────────────────────────►│                         │
+   │                          │  qrcode.make(short_url) │
+   │  PNG image (streamed)    │  → StreamingResponse    │
+   │◄─────────────────────────│                         │
+```
+
+### Data Flow: QR Code Scan (Redirect)
+
+```
+Phone                      FastAPI              Cache        SQLite
+  │                           │                   │             │
+  │  GET /r/{token}           │                   │             │
+  │──────────────────────────►│                   │             │
+  │                           │  token in cache?  │             │
+  │                           │──────────────────►│             │
+  │                           │                   │             │
+  │            ┌──────────────┴───── HIT ──────────┘            │
+  │            │              │  check expiry                   │
+  │            │              │  expired → 410                  │
+  │            │              │  valid   → record ScanEvent ───►│
+  │            │              │           302 redirect          │
+  │            │              │                                 │
+  │            └──────────────┴───── MISS ───────────────────►  │
+  │                           │                    query DB ───►│
+  │                           │                    not found    │
+  │                           │                    → 404        │
+  │                           │                    deleted /    │
+  │                           │                    expired      │
+  │                           │                    → 410        │
+  │                           │                    found        │
+  │                           │                    → populate   │
+  │                           │                      cache      │
+  │                           │                    → record     │
+  │                           │                      ScanEvent  │
+  │  302 → original_url       │                    → 302        │
+  │◄──────────────────────────│                                 │
+```
+
+---
+
 ## Project Structure
 
 ```
