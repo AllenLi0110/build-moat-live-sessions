@@ -42,8 +42,8 @@ A dynamic QR code system built with Python + FastAPI (backend) and React + TypeS
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Client Devices                            │
-│                                                                  │
+│                        Client Devices                           │
+│                                                                 │
 │   ┌──────────────────────────┐    ┌────────────────────────┐    │
 │   │   Browser / React SPA    │    │   Phone (QR Scanner)   │    │
 │   │   :5173 dev / :8000 prod │    │   follows short URL    │    │
@@ -52,12 +52,12 @@ A dynamic QR code system built with Python + FastAPI (backend) and React + TypeS
                  │  REST API calls               │  GET /r/{token}
                  ▼                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│               FastAPI Server  (Uvicorn :8000)                    │
-│                                                                  │
+│               FastAPI Server  (Uvicorn :8000)                   │
+│                                                                 │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  CORS Middleware  +  Static Files (frontend/dist)         │  │
 │  └───────────────────────────┬───────────────────────────────┘  │
-│                              │                                   │
+│                              │                                  │
 │  ┌───────────────────────────▼───────────────────────────────┐  │
 │  │  Router  (routes.py)                                      │  │
 │  │                                                           │  │
@@ -69,7 +69,7 @@ A dynamic QR code system built with Python + FastAPI (backend) and React + TypeS
 │  │  GET  /api/qr/{token}/analytics  scan stats               │  │
 │  │  GET  /r/{token}  ──────────────────────────────────┐     │  │
 │  └─────────────────────────────────────────────────────┼─────┘  │
-│                                                        │         │
+│                                                        │        │
 │  ┌─────────────────────────┐    ┌─────────────────────▼──────┐  │
 │  │   In-Memory Cache       │    │   Cache-First Redirect     │  │
 │  │   (process-scoped dict) │◄───│   1. check cache           │  │
@@ -78,7 +78,7 @@ A dynamic QR code system built with Python + FastAPI (backend) and React + TypeS
 │  │           expires_at)   │    │   4. record ScanEvent      │  │
 │  └─────────────────────────┘    │   5. 302 / 410 / 404       │  │
 │                                 └────────────────────────────┘  │
-│                                                                  │
+│                                                                 │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  SQLAlchemy ORM  ──►  SQLite  (qr_codes.db)               │  │
 │  │                                                           │  │
@@ -89,8 +89,8 @@ A dynamic QR code system built with Python + FastAPI (backend) and React + TypeS
 │  │   original_url  TEXT            scanned_at  DATETIME      │  │
 │  │   expires_at    DATETIME NULL   user_agent  VARCHAR NULL  │  │
 │  │   is_deleted    BOOLEAN         ip_address  VARCHAR NULL  │  │
-│  │   created_at    DATETIME                                   │  │
-│  │   updated_at    DATETIME                                   │  │
+│  │   created_at    DATETIME                                  │  │
+│  │   updated_at    DATETIME                                  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -137,7 +137,7 @@ Phone                      FastAPI              Cache        SQLite
   │                           │  token in cache?  │             │
   │                           │──────────────────►│             │
   │                           │                   │             │
-  │            ┌──────────────┴───── HIT ──────────┘            │
+  │            ┌──────────────┴───── HIT ─────────┘             │
   │            │              │  check expiry                   │
   │            │              │  expired → 410                  │
   │            │              │  valid   → record ScanEvent ───►│
