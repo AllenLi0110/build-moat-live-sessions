@@ -9,6 +9,13 @@ venv/
 # SQLite
 *.db
 
+# Logs
+*.log
+
+# Demo source recordings
+*.mp4
+*.mov
+
 # Node
 node_modules/
 dist/

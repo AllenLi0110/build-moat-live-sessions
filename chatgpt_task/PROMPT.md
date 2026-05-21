@@ -23,13 +23,23 @@ Answer these before you start coding:
 
 1. **Watcher vs Cron:** Why separate the watcher from the worker? What problems does a single cron job that both scans and executes have?
 
+   Separate the watcher from the worker so job discovery and job execution can fail, scale, and retry independently. A single cron job that scans and executes couples two different workloads: if one long-running task blocks, the next scan is delayed; if execution crashes, due-job detection stops too. In this prototype, the watcher only finds due `pending` jobs and enqueues their IDs, while the worker owns execution and status updates.
+
 2. **Queue Layer:** Why put a queue between the watcher and worker instead of having the watcher call the worker directly? What are the benefits?
+
+   The queue decouples "this job is due" from "a worker is ready to run it." That gives the system buffering, backpressure, cleaner retries, and a path to multiple workers later. In this prototype, the in-memory `queue.Queue[int]` keeps the watcher fast: it marks jobs as `queued`, pushes job IDs, and returns to scanning instead of blocking on execution.
 
 3. **Time Bucket Partitioning:** Instead of `SELECT * WHERE scheduled_at <= now()`, why partition jobs by time bucket (e.g., hour)? What happens to query performance at 1M+ jobs without partitioning?
 
+   Time buckets reduce the search space for due-job scans. At 1M+ jobs, repeatedly scanning every row where `scheduled_at <= now()` becomes expensive because the database must evaluate a large historical set on every watcher pass. With hourly buckets, the watcher can use the `time_bucket` index to focus on due buckets, then apply `scheduled_at <= now()` and `status == "pending"` inside a much smaller candidate set.
+
 4. **Tool Naming:** Why `task.create` instead of `createTask`? How does naming convention affect LLM tool selection accuracy?
 
+   `task.create` exposes both the domain and the action in a predictable namespace-action form. LLMs choose tools more reliably when related tools share a namespace such as `task.list`, `task.status`, and `task.cancel`, because the names make the tool family and intent explicit. `createTask` is readable to humans but weaker as a scalable tool taxonomy.
+
 5. **Registry vs If-Else:** Why use a dictionary registry to route tool calls instead of if-else chains? What happens when you need to add the 20th tool?
+
+   A dictionary registry keeps routing declarative: tool names map directly to handler functions. Adding a new tool becomes adding one registry entry instead of editing a long branching function. By the 20th tool, if-else routing becomes harder to scan, easier to break, and harder to test; the registry keeps the MCP dispatch layer small and open to extension.
 
 ## Verification
 

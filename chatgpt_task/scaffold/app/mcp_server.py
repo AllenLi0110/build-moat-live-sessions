@@ -9,7 +9,8 @@ Or test with the inspector:
 
 import asyncio
 import json
-from datetime import datetime
+import logging
+from datetime import UTC, datetime, timedelta, timezone
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -17,8 +18,12 @@ from mcp.types import TextContent, Tool
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine
+from .logging_utils import configure_structured_logging, log_event
 from .models import Job
-from .scheduler import get_time_bucket, start_scheduler
+from .scheduler import get_time_bucket, start_scheduler, transition_job_status
+
+logger = logging.getLogger("task_scheduler.mcp")
+DEFAULT_INPUT_TIMEZONE = timezone(timedelta(hours=8))
 
 
 # ===================================================================
@@ -26,18 +31,49 @@ from .scheduler import get_time_bucket, start_scheduler
 # ===================================================================
 
 
+def format_scheduled_at_for_response(scheduled_at: datetime) -> str:
+    return (
+        scheduled_at.replace(tzinfo=UTC)
+        .astimezone(DEFAULT_INPUT_TIMEZONE)
+        .strftime("%Y-%m-%d %H:%M:%S+08:00")
+    )
+
+
 def handle_create_task(db: Session, *, description: str, scheduled_at: str) -> dict:
     """Create a new scheduled job."""
-    dt = datetime.fromisoformat(scheduled_at)
+    if not isinstance(description, str) or not description.strip():
+        return {"error": "description must be a non-empty string"}
+    if not isinstance(scheduled_at, str):
+        return {"error": "scheduled_at must be ISO 8601 datetime"}
+
+    try:
+        dt = datetime.fromisoformat(scheduled_at)
+    except ValueError:
+        return {"error": "scheduled_at must be ISO 8601 datetime"}
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=DEFAULT_INPUT_TIMEZONE)
+    dt = dt.astimezone(UTC).replace(tzinfo=None)
     job = Job(
-        description=description,
+        description=description.strip(),
         scheduled_at=dt,
         time_bucket=get_time_bucket(dt),
     )
     db.add(job)
     db.commit()
     db.refresh(job)
-    return {"job_id": job.id, "status": job.status, "scheduled_at": str(job.scheduled_at)}
+    log_event(
+        logger,
+        "task.create",
+        job_id=job.id,
+        scheduled_at=job.scheduled_at.isoformat(),
+        time_bucket=job.time_bucket,
+    )
+    return {
+        "job_id": job.id,
+        "status": job.status,
+        "scheduled_at": format_scheduled_at_for_response(job.scheduled_at),
+    }
 
 
 def handle_get_status(db: Session, *, job_id: int) -> dict:
@@ -49,7 +85,7 @@ def handle_get_status(db: Session, *, job_id: int) -> dict:
         "job_id": job.id,
         "description": job.description,
         "status": job.status,
-        "scheduled_at": str(job.scheduled_at),
+        "scheduled_at": format_scheduled_at_for_response(job.scheduled_at),
         "result": job.result,
     }
 
@@ -57,13 +93,14 @@ def handle_get_status(db: Session, *, job_id: int) -> dict:
 def handle_list_tasks(db: Session) -> dict:
     """List all scheduled jobs."""
     jobs = db.query(Job).order_by(Job.scheduled_at.desc()).all()
+    log_event(logger, "task.list", job_count=len(jobs))
     return {
         "jobs": [
             {
                 "job_id": j.id,
                 "description": j.description,
                 "status": j.status,
-                "scheduled_at": str(j.scheduled_at),
+                "scheduled_at": format_scheduled_at_for_response(j.scheduled_at),
             }
             for j in jobs
         ]
@@ -75,10 +112,19 @@ def handle_cancel_task(db: Session, *, job_id: int) -> dict:
     job = db.query(Job).filter(Job.id == job_id).first()
     if job is None:
         return {"error": f"Job {job_id} not found"}
-    if job.status in ("completed", "failed"):
-        return {"error": f"Cannot cancel job in '{job.status}' state"}
-    job.status = "cancelled"
+    transitioned, error = transition_job_status(job, "cancelled")
+    if not transitioned:
+        log_event(
+            logger,
+            "task.cancel_rejected",
+            logging.WARNING,
+            job_id=job.id,
+            status=job.status,
+            reason=error,
+        )
+        return {"error": error}
     db.commit()
+    log_event(logger, "task.cancel", job_id=job.id)
     return {"job_id": job.id, "status": "cancelled"}
 
 
@@ -89,7 +135,7 @@ def handle_cancel_task(db: Session, *, job_id: int) -> dict:
 
 TOOL_DEFINITIONS: list[Tool] = [
     Tool(
-        name="task.create",
+        name="task_create",
         description="Schedule a new task for future execution",
         inputSchema={
             "type": "object",
@@ -108,23 +154,23 @@ TOOL_DEFINITIONS: list[Tool] = [
         },
     ),
     Tool(
-        name="task.list",
+        name="task_list",
         description="List all scheduled tasks",
         inputSchema={"type": "object", "properties": {}},
     ),
     Tool(
-        name="task.status",
+        name="task_status",
         description="Get the status of a scheduled task by job_id",
         inputSchema={
             "type": "object",
             "properties": {
-                "job_id": {"type": "integer", "description": "The job ID returned by task.create"},
+                "job_id": {"type": "integer", "description": "The job ID returned by task_create"},
             },
             "required": ["job_id"],
         },
     ),
     Tool(
-        name="task.cancel",
+        name="task_cancel",
         description="Cancel a scheduled task that hasn't completed yet",
         inputSchema={
             "type": "object",
@@ -154,7 +200,16 @@ TOOL_DEFINITIONS: list[Tool] = [
 # 3. Values are the handler functions defined earlier in this file
 #    (e.g., handle_create_task)
 # 4. There are 4 tools: task.create, task.list, task.status, task.cancel
-TOOL_REGISTRY: dict = {}
+TOOL_REGISTRY: dict = {
+    "task_create": handle_create_task,
+    "task_list": handle_list_tasks,
+    "task_status": handle_get_status,
+    "task_cancel": handle_cancel_task,
+    "task.create": handle_create_task,
+    "task.list": handle_list_tasks,
+    "task.status": handle_get_status,
+    "task.cancel": handle_cancel_task,
+}
 
 
 def route_tool_call(tool_name: str, arguments: dict, db: Session) -> dict:
@@ -163,18 +218,12 @@ def route_tool_call(tool_name: str, arguments: dict, db: Session) -> dict:
     Called by the async @server.call_tool() wrapper below. Kept sync so
     handlers can use plain SQLAlchemy without async ceremony.
     """
-    # TODO: Implement this function
-    #
-    # Design decision: Single dispatch point for all MCP tool calls —
-    #   the LLM sends a tool_name + arguments, and this function routes
-    #   to the correct handler via the registry.
-    #
-    # Hints:
-    # 1. Look up tool_name in TOOL_REGISTRY using dict.get()
-    # 2. If not found, return {"error": f"Unknown tool: {tool_name}"}
-    # 3. If found, call the handler with db and **arguments
-    # 4. Return the handler's result
-    return {"error": "Not implemented"}
+    handler = TOOL_REGISTRY.get(tool_name)
+    if handler is None:
+        log_event(logger, "tool.unknown", logging.WARNING, tool_name=tool_name)
+        return {"error": f"Unknown tool: {tool_name}"}
+    log_event(logger, "tool.call", tool_name=tool_name)
+    return handler(db, **arguments)
 
 
 # ===================================================================
@@ -206,6 +255,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
 
 async def main() -> None:
+    configure_structured_logging()
     Base.metadata.create_all(bind=engine)
     start_scheduler()
 
