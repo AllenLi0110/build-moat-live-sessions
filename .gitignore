@@ -23,6 +23,13 @@ dist/
 # Claude Code
 .claude/
 
+# Generated knowledge base indexes
+.kb/
+**/.kb/
+
+# Instructor-only answer keys
+knowledge_base_qa_bot/answers/
+
 # Editor / OS
 .DS_Store
 .vscode/
