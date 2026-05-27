@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Knowledge Base Q&A Bot</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --text: #17202a;
+        --muted: #667085;
+        --line: #d9dee7;
+        --accent: #0f766e;
+        --accent-dark: #115e59;
+        --warning: #92400e;
+        --source: #eef6f4;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(980px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 28px 0;
+      }
+
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 28px;
+        line-height: 1.15;
+        font-weight: 750;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .strategy {
+        display: inline-flex;
+        gap: 4px;
+        padding: 4px;
+        background: #e8edf3;
+        border-radius: 8px;
+      }
+
+      .strategy button {
+        background: transparent;
+        color: #344054;
+        border: 0;
+        min-height: 34px;
+        padding: 0 12px;
+      }
+
+      .strategy button.active {
+        background: #ffffff;
+        color: var(--accent-dark);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.14);
+      }
+
+      button {
+        border: 1px solid transparent;
+        border-radius: 6px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 650;
+        min-height: 40px;
+        padding: 0 14px;
+      }
+
+      button:hover {
+        background: var(--accent-dark);
+      }
+
+      button.secondary {
+        background: #fff;
+        color: var(--accent-dark);
+        border-color: var(--line);
+      }
+
+      button.secondary:hover {
+        background: #f0fdfa;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 16px;
+        align-items: start;
+      }
+
+      .chat,
+      .side {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .messages {
+        height: min(62vh, 620px);
+        min-height: 380px;
+        overflow: auto;
+        padding: 18px;
+      }
+
+      .message {
+        max-width: 84%;
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .message.user {
+        margin-left: auto;
+        background: #0f766e;
+        color: #fff;
+      }
+
+      .message.bot {
+        background: #e0f2fe;
+        border: 1px solid #bae6fd;
+      }
+
+      .message.bot.vector {
+        background: #fef3c7;
+        border-color: #fde68a;
+      }
+
+      .message.system {
+        max-width: 100%;
+        background: transparent;
+        border: 1px dashed var(--line);
+        color: var(--muted);
+      }
+
+      .composer {
+        display: flex;
+        gap: 10px;
+        border-top: 1px solid var(--line);
+        padding: 12px;
+      }
+
+      textarea {
+        flex: 1;
+        min-height: 44px;
+        max-height: 140px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 10px 12px;
+        font: inherit;
+      }
+
+      textarea:focus {
+        outline: 2px solid #99f6e4;
+        border-color: var(--accent);
+      }
+
+      .side {
+        padding: 16px;
+      }
+
+      .side h2 {
+        margin: 0 0 10px;
+        font-size: 16px;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 14px;
+      }
+
+      .quick {
+        display: grid;
+        gap: 8px;
+        margin: 14px 0;
+      }
+
+      .quick button {
+        width: 100%;
+        min-height: 36px;
+        text-align: left;
+        font-weight: 600;
+      }
+
+      .source {
+        background: var(--source);
+        border: 1px solid #cce7df;
+        border-radius: 6px;
+        padding: 10px;
+        margin-top: 10px;
+      }
+
+      .source strong {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+
+      .source p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .focus {
+        color: var(--warning);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+        margin: 8px 0 0;
+      }
+
+      @media (max-width: 820px) {
+        header {
+          display: block;
+        }
+
+        header button {
+          margin-top: 12px;
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .messages {
+          height: 56vh;
+          min-height: 320px;
+        }
+
+        .message {
+          max-width: 92%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Knowledge Base Q&A Bot</h1>
+          <p class="subtitle">Ask questions against the Markdown knowledge base and inspect the cited sections.</p>
+        </div>
+        <div>
+          <div class="strategy" aria-label="Retrieval strategy">
+            <button class="active" type="button" data-strategy="markdown">Markdown KB</button>
+            <button type="button" data-strategy="vector">Vector RAG</button>
+          </div>
+          <p class="hint">Vector RAG expects a server on port 8001.</p>
+        </div>
+      </header>
+
+      <section class="layout">
+        <div class="chat" aria-label="Chat">
+          <div id="messages" class="messages" aria-live="polite">
+            <div class="message system">Ask a question. Each backend prepares its index when the server starts.</div>
+          </div>
+          <form id="chatForm" class="composer">
+            <textarea id="queryInput" aria-label="Question" placeholder="Ask about refunds, account help, or shipping..." required></textarea>
+            <button type="submit">Send</button>
+          </form>
+        </div>
+
+        <aside class="side">
+          <h2>Status</h2>
+          <p id="status" class="status">Ready. Index is prepared when each server starts.</p>
+
+          <h2>Try</h2>
+          <div class="quick">
+            <button class="secondary" type="button" data-query="How long do refunds take?">Refund timeline</button>
+            <button class="secondary" type="button" data-query="Can I change my email address?">Change email</button>
+            <button class="secondary" type="button" data-query="Which restaurants are nearby?">Out of scope</button>
+          </div>
+
+          <h2>Learning Focus</h2>
+          <p id="learningFocus" class="focus">No retrieval result yet.</p>
+
+          <h2>Sources</h2>
+          <div id="sources"></div>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const messages = document.querySelector("#messages");
+      const statusText = document.querySelector("#status");
+      const form = document.querySelector("#chatForm");
+      const input = document.querySelector("#queryInput");
+      const sources = document.querySelector("#sources");
+      const learningFocus = document.querySelector("#learningFocus");
+      const strategyButtons = document.querySelectorAll("[data-strategy]");
+      const strategies = {
+        markdown: {
+          label: "Markdown KB",
+          baseUrl: "",
+          botClass: "bot",
+        },
+        vector: {
+          label: "Vector RAG",
+          baseUrl: "http://127.0.0.1:8001",
+          botClass: "bot vector",
+        },
+      };
+      let currentStrategy = "markdown";
+
+      function setStatus(text) {
+        statusText.textContent = text;
+      }
+
+      function activeStrategy() {
+        return strategies[currentStrategy];
+      }
+
+      function addMessage(role, text, strategyClass = "") {
+        const item = document.createElement("div");
+        item.className = `message ${strategyClass || role}`;
+        item.textContent = text;
+        messages.appendChild(item);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function renderSources(items) {
+        sources.innerHTML = "";
+        if (!items.length) {
+          const empty = document.createElement("p");
+          empty.className = "status";
+          empty.textContent = "No sources selected.";
+          sources.appendChild(empty);
+          return;
+        }
+
+        for (const item of items) {
+          const block = document.createElement("div");
+          block.className = "source";
+
+          const title = document.createElement("strong");
+          title.textContent = `${item.source} (${item.score})`;
+
+          const text = document.createElement("p");
+          text.textContent = item.content;
+
+          block.append(title, text);
+          sources.appendChild(block);
+        }
+      }
+
+      async function ask(question) {
+        const strategy = activeStrategy();
+        addMessage("user", question);
+        setStatus(`Retrieving with ${strategy.label}...`);
+        renderSources([]);
+        learningFocus.textContent = "Waiting for retrieval result...";
+
+        try {
+          const response = await fetch(`${strategy.baseUrl}/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: question }),
+          });
+          const contentType = response.headers.get("content-type") || "";
+          const payload = contentType.includes("application/json")
+            ? await response.json()
+            : { detail: await response.text() };
+          if (!response.ok) {
+            throw new Error(payload.detail || "Chat request failed.");
+          }
+          addMessage("bot", `[${strategy.label}] ${payload.answer}`, strategy.botClass);
+          renderSources(payload.sources || []);
+          learningFocus.textContent = payload.learning_focus || "No retrieval focus for this answer.";
+          setStatus("Ready.");
+        } catch (error) {
+          setStatus("Chat request failed.");
+          addMessage("bot", `[${strategy.label}] ${error.message}`, strategy.botClass);
+        }
+      }
+
+      strategyButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          currentStrategy = button.dataset.strategy;
+          strategyButtons.forEach((item) => item.classList.toggle("active", item === button));
+          const strategy = activeStrategy();
+          setStatus(`${strategy.label} selected.`);
+          renderSources([]);
+          learningFocus.textContent = "No retrieval result yet.";
+        });
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const question = input.value.trim();
+        if (!question) {
+          return;
+        }
+        input.value = "";
+        ask(question);
+      });
+
+      document.querySelectorAll("[data-query]").forEach((button) => {
+        button.addEventListener("click", () => {
+          input.value = button.dataset.query;
+          input.focus();
+        });
+      });
+    </script>
+  </body>
+</html>

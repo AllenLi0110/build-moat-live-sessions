@@ -20,3 +20,4 @@ class SourceInfo(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     sources: list[SourceInfo]
+    learning_focus: str = ""

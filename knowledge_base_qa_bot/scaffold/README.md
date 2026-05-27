@@ -18,12 +18,12 @@ POST /index
 POST /chat
 ```
 
-Both folders require an OpenAI API key before running the server:
+Optionally set a Groq API key for final LLM answer generation:
 
 ```bash
-export OPENAI_API_KEY="sk-..."
+export GROQ_API_KEY="gsk_..."
 ```
 
-Markdown KB uses the key for final answer generation. Vector RAG also uses it for embeddings.
+Both folders still run without `GROQ_API_KEY` by returning a local extractive fallback answer from retrieved context. Vector RAG uses local deterministic embeddings, so it does not require an embeddings API key.
 
 Start with `markdown_kb` if you want the smallest dependency surface and the easiest debugging path.

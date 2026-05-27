@@ -1,5 +1,9 @@
 # Knowledge Base Q&A Bot
 
+## Demo
+
+![Knowledge Base Q&A Bot demo](images/knowledge_base_qu_bot.gif)
+
 ## How to Use
 
 1. Read `PROMPT.md`
@@ -55,13 +59,13 @@ Restarting the server should not require rebuilding immediately. Re-run `/index`
 
 ## Prerequisites
 
-Both guided tracks use OpenAI for final answer generation:
+Optionally set a Groq API key for final LLM answer generation:
 
 ```bash
-export OPENAI_API_KEY="sk-..."
+export GROQ_API_KEY="gsk_..."
 ```
 
-The Markdown KB track does not need embeddings. The Vector RAG track uses OpenAI embeddings.
+Both guided tracks still run without `GROQ_API_KEY` by returning a local extractive fallback answer from retrieved context. The Markdown KB track does not need embeddings. The Vector RAG track uses local deterministic embeddings during `/index`, so it does not require an embeddings API key.
 
 ## Stretch Goals
 

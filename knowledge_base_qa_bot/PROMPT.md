@@ -37,24 +37,39 @@ This is the traditional RAG path: semantic retrieval with embeddings and a vecto
 
 Answer these before you start coding:
 
-1. Which retrieval strategy did you choose, and why?
-2. What is the retrieval unit in your design: file, section, or chunk?
-3. How do you decide what goes into the prompt?
-4. How do you cite sources so users can inspect the original Markdown?
-5. What should happen when retrieval finds weak or irrelevant results?
-6. When would you switch from Markdown KB to Vector RAG?
-7. When would you switch from Vector RAG back to a Markdown index?
-8. If the knowledge base grows from 10 files to 100,000 files, what changes?
+1. **Which retrieval strategy did you choose, and why?**
+   I implemented **Markdown KB** first, then added **Vector RAG** for comparison. Markdown KB is easier to debug with small structured docs, while Vector RAG helps compare semantic retrieval behavior.
+
+2. **What is the retrieval unit in your design: file, section, or chunk?**
+   The retrieval unit is a **Markdown section** under a heading.
+
+3. **How do you decide what goes into the prompt?**
+   Only the top relevant retrieved sections are added to the prompt as grounded context.
+
+4. **How do you cite sources so users can inspect the original Markdown?**
+   Sources are cited as `filename#heading`, so users can trace answers back to the original Markdown section.
+
+5. **What should happen when retrieval finds weak or irrelevant results?**
+   The bot should refuse to answer and say the knowledge base does not contain enough evidence.
+
+6. **When would you switch from Markdown KB to Vector RAG?**
+   I would switch to Vector RAG when users ask more semantic questions or the documents become less structured.
+
+7. **When would you switch from Vector RAG back to a Markdown index?**
+   I would switch back when the docs are highly structured, small enough, and exact source traceability is more important than semantic matching.
+
+8. **If the knowledge base grows from 10 files to 100,000 files, what changes?**
+   I would add persistent indexing, pagination/batching, incremental updates, faster search infrastructure, and likely use vector search or a hybrid keyword/vector approach.
 
 ## Verification
 
-Before running the server, set your OpenAI API key:
+Optionally set your Groq API key before running the server:
 
 ```bash
-export OPENAI_API_KEY="sk-..."
+export GROQ_API_KEY="gsk_..."
 ```
 
-Both strategies use OpenAI for final answer generation. Vector RAG also uses OpenAI embeddings during `/index` and for each `/chat` query.
+Both strategies use Groq for final LLM answer generation when the key is present. Without `GROQ_API_KEY`, the scaffolds still run and return a local extractive fallback answer from the retrieved context. Vector RAG uses local deterministic embeddings during `/index`, so it does not require an embeddings API key.
 
 Your prototype should pass all of these:
 
@@ -63,11 +78,12 @@ Your prototype should pass all of these:
 curl http://localhost:8000/health
 # -> 200, {"status": "ok"}
 
-# Chat before indexing
+# Chat before indexing in a custom implementation
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
   -d '{"query": "How long do refunds take?"}'
 # -> 200, should indicate the knowledge base has not been indexed yet
+# Guided scaffolds auto-load or build the index on startup, so they may answer immediately.
 
 # Build the index from docs/*.md
 curl -X POST http://localhost:8000/index
@@ -102,6 +118,20 @@ curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
   -d '{"query": "Which restaurants are nearby?"}'
 # -> 200, answer should say it cannot confirm from the knowledge base
+
+# Ask a semantic question (tests retrieval quality)
+curl -X POST http://localhost:8001/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "When will I receive my money back?"}'
+# -> 200, answer should retrieve refund_policy.md#refund-timeline
+# and explain that approved refunds are processed within 5-7 business days
+
+# Markdown KB: tests exact phrase retrieval
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Which section contains the exact phrase \"1-2 business days\"?"}'
+# -> 200, answer should cite shipping_faq.md#expedited-shipping.
+# Vector RAG may miss this because exact phrase matching is not its strength.
 ```
 
 ## Suggested Tech Stack
