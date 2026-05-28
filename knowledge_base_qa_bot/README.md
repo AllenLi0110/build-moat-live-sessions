@@ -19,17 +19,11 @@
 
 ## Recommended Path
 
-If you want the simplest guided path, start here:
+If you want the simplest guided path, start with **Markdown KB** because its generated `.kb/index.json` is easy to inspect and debug.
 
-```bash
-cd scaffold/markdown_kb
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
+If you want to compare semantic retrieval behavior, run **Vector RAG** after Markdown KB and test the same questions against both strategies.
 
-Then run the verification tests from `PROMPT.md`.
+Use the strategy-specific setup commands in [Index Build Flow](#index-build-flow), then run the verification tests from `PROMPT.md`.
 
 ## Guided Track Options
 
@@ -56,6 +50,68 @@ After calling `/index`, each strategy persists its retrieval index:
 | Vector RAG | `.kb/faiss_index/` | Loads the FAISS index into memory |
 
 Restarting the server should not require rebuilding immediately. Re-run `/index` after changing `docs/*.md`.
+
+## Index Build Flow
+
+The two guided tracks build their indexes from the same source folder:
+
+```text
+docs/*.md
+```
+
+Run each scaffold from its own folder. Do not install dependencies from the workspace root.
+
+### Markdown KB
+
+```bash
+cd scaffold/markdown_kb
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+In another terminal:
+
+```bash
+curl -X POST http://localhost:8000/index
+cat ../../.kb/index.json
+```
+
+Build sequence:
+
+```text
+docs/*.md -> Markdown heading sections -> BM25 section index -> .kb/index.json
+```
+
+Use this strategy when the knowledge base is small, structured, and easier to debug as human-readable Markdown sections.
+
+### Vector RAG
+
+```bash
+cd scaffold/vector_rag
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8001
+```
+
+In another terminal:
+
+```bash
+curl -X POST http://localhost:8001/index
+cat ../../.kb/faiss_index/metadata.json
+```
+
+Build sequence:
+
+```text
+docs/*.md -> Markdown sections -> chunks -> deterministic embeddings -> FAISS index -> .kb/faiss_index/
+```
+
+Use this strategy when you want to compare semantic retrieval behavior against the Markdown KB strategy.
+
+After editing files in `docs/`, call `/index` again for the strategy you are testing.
 
 ## Prerequisites
 
