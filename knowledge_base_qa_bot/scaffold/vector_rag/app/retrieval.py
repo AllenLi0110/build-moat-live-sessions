@@ -29,6 +29,9 @@ UNSAFE_QUERY_RE = re.compile(
 
 
 def ensure_source(answer: str, source_ids: list[str]) -> str:
+    if answer.strip().startswith(FALLBACK_ANSWER):
+        return FALLBACK_ANSWER
+
     if any(source_id in answer for source_id in source_ids):
         return answer
     return f"{answer.rstrip()} [{source_ids[0]}]"

@@ -15,6 +15,10 @@
         --accent: #0f766e;
         --accent-dark: #115e59;
         --warning: #92400e;
+        --kb: #e0f2fe;
+        --kb-line: #bae6fd;
+        --rag: #fef3c7;
+        --rag-line: #fde68a;
         --source: #eef6f4;
       }
 
@@ -31,9 +35,9 @@
       }
 
       main {
-        width: min(980px, calc(100vw - 32px));
+        width: min(1360px, calc(100vw - 32px));
         margin: 0 auto;
-        padding: 28px 0;
+        padding: 24px 0;
       }
 
       header {
@@ -41,7 +45,7 @@
         align-items: flex-start;
         justify-content: space-between;
         gap: 16px;
-        margin-bottom: 20px;
+        margin-bottom: 18px;
       }
 
       h1 {
@@ -51,32 +55,24 @@
         font-weight: 750;
       }
 
-      .subtitle {
-        margin: 0;
+      .subtitle,
+      .hint,
+      .status,
+      .empty {
         color: var(--muted);
-        font-size: 15px;
+        font-size: 14px;
+        line-height: 1.45;
       }
 
-      .strategy {
-        display: inline-flex;
-        gap: 4px;
-        padding: 4px;
-        background: #e8edf3;
-        border-radius: 8px;
+      .subtitle,
+      .status,
+      .empty {
+        margin: 0;
       }
 
-      .strategy button {
-        background: transparent;
-        color: #344054;
-        border: 0;
-        min-height: 34px;
-        padding: 0 12px;
-      }
-
-      .strategy button.active {
-        background: #ffffff;
-        color: var(--accent-dark);
-        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.14);
+      .hint {
+        margin: 8px 0 0;
+        text-align: right;
       }
 
       button {
@@ -107,68 +103,63 @@
 
       .layout {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 320px;
+        grid-template-columns: 300px minmax(0, 1fr);
         gap: 16px;
         align-items: start;
       }
 
-      .chat,
-      .side {
+      .panel {
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 8px;
       }
 
-      .messages {
-        height: min(62vh, 620px);
-        min-height: 380px;
-        overflow: auto;
-        padding: 18px;
+      .controls {
+        padding: 16px;
       }
 
-      .message {
-        max-width: 84%;
-        margin-bottom: 14px;
-        padding: 12px 14px;
-        border-radius: 8px;
-        line-height: 1.5;
-        white-space: pre-wrap;
+      h2,
+      h3 {
+        margin: 0;
+        font-size: 16px;
       }
 
-      .message.user {
-        margin-left: auto;
-        background: #0f766e;
-        color: #fff;
+      h3 {
+        font-size: 15px;
       }
 
-      .message.bot {
-        background: #e0f2fe;
-        border: 1px solid #bae6fd;
+      .quick {
+        display: grid;
+        gap: 8px;
+        margin: 14px 0;
       }
 
-      .message.bot.vector {
-        background: #fef3c7;
-        border-color: #fde68a;
+      .quick button {
+        width: 100%;
+        min-height: 52px;
+        text-align: left;
+        font-weight: 650;
+        line-height: 1.25;
       }
 
-      .message.system {
-        max-width: 100%;
-        background: transparent;
-        border: 1px dashed var(--line);
+      .quick small {
+        display: block;
         color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 4px;
       }
 
       .composer {
-        display: flex;
-        gap: 10px;
-        border-top: 1px solid var(--line);
-        padding: 12px;
+        display: grid;
+        gap: 8px;
+        margin-top: 16px;
       }
 
       textarea {
-        flex: 1;
-        min-height: 44px;
-        max-height: 140px;
+        width: 100%;
+        min-height: 88px;
+        max-height: 160px;
         resize: vertical;
         border: 1px solid var(--line);
         border-radius: 6px;
@@ -181,32 +172,145 @@
         border-color: var(--accent);
       }
 
-      .side {
-        padding: 16px;
+      .question {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
       }
 
-      .side h2 {
-        margin: 0 0 10px;
-        font-size: 16px;
-      }
-
-      .status {
+      .question strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 13px;
         color: var(--muted);
-        font-size: 14px;
-        margin: 0 0 14px;
       }
 
-      .quick {
+      .question p {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .takeaway {
+        margin-top: 10px;
+        background: #ecfdf5;
+        border: 1px solid #99f6e4;
+        border-left: 4px solid var(--accent);
+        border-radius: 6px;
+        color: #115e59;
+        font-size: 18px;
+        font-weight: 750;
+        line-height: 1.45;
+        padding: 10px 12px;
+      }
+
+      .comparison {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .result {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        min-width: 0;
+      }
+
+      .result-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .result-header.kb {
+        background: var(--kb);
+        border-bottom-color: var(--kb-line);
+      }
+
+      .result-header.rag {
+        background: var(--rag);
+        border-bottom-color: var(--rag-line);
+      }
+
+      .badge {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .result-body {
+        display: grid;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .section {
         display: grid;
         gap: 8px;
-        margin: 14px 0;
       }
 
-      .quick button {
-        width: 100%;
-        min-height: 36px;
-        text-align: left;
-        font-weight: 600;
+      .answer,
+      .citation,
+      .judgment,
+      .focus {
+        border-radius: 6px;
+        line-height: 1.5;
+        padding: 10px;
+        white-space: pre-wrap;
+      }
+
+      .answer {
+        background: #f8fafc;
+        border: 1px solid var(--line);
+      }
+
+      .citation {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        color: var(--accent-dark);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+
+      .judgment {
+        background: #f1f5f9;
+        border: 1px solid var(--line);
+        color: #334155;
+        font-weight: 700;
+      }
+
+      .focus {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: var(--warning);
+        font-size: 14px;
+      }
+
+      details {
+        border-top: 1px solid var(--line);
+        padding-top: 4px;
+      }
+
+      summary {
+        color: var(--accent-dark);
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 750;
+        padding: 8px 0;
+      }
+
+      .details-body {
+        display: grid;
+        gap: 10px;
+        padding-top: 4px;
       }
 
       .source {
@@ -214,13 +318,17 @@
         border: 1px solid #cce7df;
         border-radius: 6px;
         padding: 10px;
-        margin-top: 10px;
+      }
+
+      .source + .source {
+        margin-top: 8px;
       }
 
       .source strong {
         display: block;
         font-size: 13px;
         margin-bottom: 4px;
+        overflow-wrap: anywhere;
       }
 
       .source p {
@@ -230,39 +338,17 @@
         line-height: 1.45;
       }
 
-      .focus {
-        color: var(--warning);
-        font-size: 14px;
-        line-height: 1.45;
-      }
-
-      .hint {
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.45;
-        margin: 8px 0 0;
-      }
-
-      @media (max-width: 820px) {
-        header {
-          display: block;
-        }
-
-        header button {
-          margin-top: 12px;
-        }
-
+      @media (max-width: 1040px) {
         .layout {
           grid-template-columns: 1fr;
         }
 
-        .messages {
-          height: 56vh;
-          min-height: 320px;
+        .comparison {
+          grid-template-columns: 1fr;
         }
 
-        .message {
-          max-width: 92%;
+        .hint {
+          text-align: left;
         }
       }
     </style>
@@ -272,93 +358,175 @@
       <header>
         <div>
           <h1>Knowledge Base Q&A Bot</h1>
-          <p class="subtitle">Ask questions against the Markdown knowledge base and inspect the cited sections.</p>
+          <p class="subtitle">Compare Markdown KB and Vector RAG answers from the same question.</p>
         </div>
         <div>
-          <div class="strategy" aria-label="Retrieval strategy">
-            <button class="active" type="button" data-strategy="markdown">Markdown KB</button>
-            <button type="button" data-strategy="vector">Vector RAG</button>
-          </div>
-          <p class="hint">Vector RAG expects a server on port 8001.</p>
+          <p class="status" id="status">Ready. Index is prepared when each server starts.</p>
+          <p class="hint">Markdown KB: 8000 | Vector RAG: 8001</p>
         </div>
       </header>
 
       <section class="layout">
-        <div class="chat" aria-label="Chat">
-          <div id="messages" class="messages" aria-live="polite">
-            <div class="message system">Ask a question. Each backend prepares its index when the server starts.</div>
-          </div>
-          <form id="chatForm" class="composer">
-            <textarea id="queryInput" aria-label="Question" placeholder="Ask about refunds, account help, or shipping..." required></textarea>
-            <button type="submit">Send</button>
-          </form>
-        </div>
-
-        <aside class="side">
-          <h2>Status</h2>
-          <p id="status" class="status">Ready. Index is prepared when each server starts.</p>
-
-          <h2>Try</h2>
+        <aside class="panel controls">
+          <h2>Demo Questions</h2>
           <div class="quick">
-            <button class="secondary" type="button" data-query="How long do refunds take?">Refund timeline</button>
-            <button class="secondary" type="button" data-query="Can I change my email address?">Change email</button>
-            <button class="secondary" type="button" data-query="Which restaurants are nearby?">Out of scope</button>
+            <button class="secondary" type="button" data-query="How long do refunds take?">
+              1. How long do refunds take?
+              <small>Direct policy question</small>
+            </button>
+            <button class="secondary" type="button" data-query="When will I receive my money back?">
+              2. When will I receive my money back?
+              <small>Paraphrased refund question</small>
+            </button>
+            <button class="secondary" type="button" data-query='Which section contains the exact phrase "1-2 business days"?'>
+              3. Which section has "1-2 business days"?
+              <small>Exact phrase question</small>
+            </button>
+            <button class="secondary" type="button" data-query="Which restaurants are nearby?">
+              4. Which restaurants are nearby?
+              <small>Out-of-scope question</small>
+            </button>
           </div>
 
-          <h2>Learning Focus</h2>
-          <p id="learningFocus" class="focus">No retrieval result yet.</p>
-
-          <h2>Sources</h2>
-          <div id="sources"></div>
+          <form id="chatForm" class="composer">
+            <textarea id="queryInput" aria-label="Question" placeholder="Optional custom question..."></textarea>
+            <button type="submit">Compare</button>
+          </form>
         </aside>
+
+        <section class="panel">
+          <div class="question">
+            <strong>Current Question</strong>
+            <p id="currentQuestion">Choose a demo question.</p>
+            <div id="takeaway" class="takeaway">Select a question, then press Compare to reveal the demo takeaway.</div>
+          </div>
+
+          <div class="comparison" aria-live="polite">
+            <article class="result">
+              <div class="result-header kb">
+                <h2>Markdown KB</h2>
+                <span class="badge">Section index + BM25</span>
+              </div>
+              <div class="result-body">
+                <div class="section">
+                  <h3>Answer</h3>
+                  <div id="markdownAnswer" class="answer empty">No answer yet.</div>
+                </div>
+                <div class="section">
+                  <h3>Citation</h3>
+                  <div id="markdownCitation" class="citation empty">No citation yet.</div>
+                </div>
+                <div class="section">
+                  <h3>Result</h3>
+                  <div id="markdownJudgment" class="judgment empty">Run Compare to evaluate this strategy.</div>
+                </div>
+                <details>
+                  <summary>Retrieval details</summary>
+                  <div class="details-body">
+                    <div id="markdownFocus" class="focus empty">No retrieval result yet.</div>
+                    <div id="markdownSources" class="sources empty">No sources selected.</div>
+                  </div>
+                </details>
+              </div>
+            </article>
+
+            <article class="result">
+              <div class="result-header rag">
+                <h2>Vector RAG</h2>
+                <span class="badge">Chunks + embeddings</span>
+              </div>
+              <div class="result-body">
+                <div class="section">
+                  <h3>Answer</h3>
+                  <div id="vectorAnswer" class="answer empty">No answer yet.</div>
+                </div>
+                <div class="section">
+                  <h3>Citation</h3>
+                  <div id="vectorCitation" class="citation empty">No citation yet.</div>
+                </div>
+                <div class="section">
+                  <h3>Result</h3>
+                  <div id="vectorJudgment" class="judgment empty">Run Compare to evaluate this strategy.</div>
+                </div>
+                <details>
+                  <summary>Retrieval details</summary>
+                  <div class="details-body">
+                    <div id="vectorFocus" class="focus empty">No retrieval result yet.</div>
+                    <div id="vectorSources" class="sources empty">No sources selected.</div>
+                  </div>
+                </details>
+              </div>
+            </article>
+          </div>
+        </section>
       </section>
     </main>
 
     <script>
-      const messages = document.querySelector("#messages");
       const statusText = document.querySelector("#status");
       const form = document.querySelector("#chatForm");
       const input = document.querySelector("#queryInput");
-      const sources = document.querySelector("#sources");
-      const learningFocus = document.querySelector("#learningFocus");
-      const strategyButtons = document.querySelectorAll("[data-strategy]");
-      const strategies = {
+      const currentQuestion = document.querySelector("#currentQuestion");
+      const takeaway = document.querySelector("#takeaway");
+      let selectedTakeaway = "";
+
+      const takeaways = {
+        "How long do refunds take?": "Both strategies should cite the refund timeline.",
+        "When will I receive my money back?": "Vector RAG should handle this paraphrase better.",
+        'Which section contains the exact phrase "1-2 business days"?': "Markdown KB is easier to inspect for exact phrases.",
+        "Which restaurants are nearby?": "A grounded bot should refuse unsupported questions.",
+      };
+
+      const judgments = {
+        "How long do refunds take?": {
+          markdown: "Expected: cites the refund timeline section.",
+          vector: "Expected: cites the same refund evidence.",
+        },
+        "When will I receive my money back?": {
+          markdown: "Watch for a keyword miss or weaker source match.",
+          vector: "Expected: semantic match to refund timeline.",
+        },
+        'Which section contains the exact phrase "1-2 business days"?': {
+          markdown: "Expected: direct phrase match in shipping FAQ.",
+          vector: "May retrieve related chunks, but exact phrase lookup is not its strength.",
+        },
+        "Which restaurants are nearby?": {
+          markdown: "Expected: cannot confirm from the knowledge base.",
+          vector: "Expected: cannot confirm from the knowledge base.",
+        },
+      };
+
+      const panels = {
         markdown: {
           label: "Markdown KB",
           baseUrl: "",
-          botClass: "bot",
+          answer: document.querySelector("#markdownAnswer"),
+          citation: document.querySelector("#markdownCitation"),
+          judgment: document.querySelector("#markdownJudgment"),
+          focus: document.querySelector("#markdownFocus"),
+          sources: document.querySelector("#markdownSources"),
         },
         vector: {
           label: "Vector RAG",
           baseUrl: "http://127.0.0.1:8001",
-          botClass: "bot vector",
+          answer: document.querySelector("#vectorAnswer"),
+          citation: document.querySelector("#vectorCitation"),
+          judgment: document.querySelector("#vectorJudgment"),
+          focus: document.querySelector("#vectorFocus"),
+          sources: document.querySelector("#vectorSources"),
         },
       };
-      let currentStrategy = "markdown";
 
       function setStatus(text) {
         statusText.textContent = text;
       }
 
-      function activeStrategy() {
-        return strategies[currentStrategy];
-      }
+      function renderSources(container, items) {
+        container.innerHTML = "";
+        container.classList.toggle("empty", !items.length);
 
-      function addMessage(role, text, strategyClass = "") {
-        const item = document.createElement("div");
-        item.className = `message ${strategyClass || role}`;
-        item.textContent = text;
-        messages.appendChild(item);
-        messages.scrollTop = messages.scrollHeight;
-      }
-
-      function renderSources(items) {
-        sources.innerHTML = "";
         if (!items.length) {
-          const empty = document.createElement("p");
-          empty.className = "status";
-          empty.textContent = "No sources selected.";
-          sources.appendChild(empty);
+          container.textContent = "No sources selected.";
           return;
         }
 
@@ -373,64 +541,143 @@
           text.textContent = item.content;
 
           block.append(title, text);
-          sources.appendChild(block);
+          container.appendChild(block);
         }
       }
 
-      async function ask(question) {
-        const strategy = activeStrategy();
-        addMessage("user", question);
-        setStatus(`Retrieving with ${strategy.label}...`);
-        renderSources([]);
-        learningFocus.textContent = "Waiting for retrieval result...";
-
-        try {
-          const response = await fetch(`${strategy.baseUrl}/chat`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: question }),
-          });
-          const contentType = response.headers.get("content-type") || "";
-          const payload = contentType.includes("application/json")
-            ? await response.json()
-            : { detail: await response.text() };
-          if (!response.ok) {
-            throw new Error(payload.detail || "Chat request failed.");
-          }
-          addMessage("bot", `[${strategy.label}] ${payload.answer}`, strategy.botClass);
-          renderSources(payload.sources || []);
-          learningFocus.textContent = payload.learning_focus || "No retrieval focus for this answer.";
-          setStatus("Ready.");
-        } catch (error) {
-          setStatus("Chat request failed.");
-          addMessage("bot", `[${strategy.label}] ${error.message}`, strategy.botClass);
-        }
+      function setLoading(panel) {
+        panel.answer.textContent = "Retrieving...";
+        panel.citation.textContent = "Waiting for source...";
+        panel.judgment.textContent = "Evaluating retrieval result...";
+        panel.focus.textContent = "Waiting for retrieval result...";
+        panel.answer.classList.add("empty");
+        panel.citation.classList.add("empty");
+        panel.judgment.classList.add("empty");
+        panel.focus.classList.add("empty");
+        renderSources(panel.sources, []);
       }
 
-      strategyButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          currentStrategy = button.dataset.strategy;
-          strategyButtons.forEach((item) => item.classList.toggle("active", item === button));
-          const strategy = activeStrategy();
-          setStatus(`${strategy.label} selected.`);
-          renderSources([]);
-          learningFocus.textContent = "No retrieval result yet.";
+      function resetPanel(panel) {
+        panel.answer.textContent = "No answer yet.";
+        panel.citation.textContent = "No citation yet.";
+        panel.judgment.textContent = "Run Compare to evaluate this strategy.";
+        panel.focus.textContent = "No retrieval result yet.";
+        panel.answer.classList.add("empty");
+        panel.citation.classList.add("empty");
+        panel.judgment.classList.add("empty");
+        panel.focus.classList.add("empty");
+        renderSources(panel.sources, []);
+      }
+
+      function resetComparison() {
+        resetPanel(panels.markdown);
+        resetPanel(panels.vector);
+      }
+
+      const fallbackAnswer = "I cannot confirm from the knowledge base.";
+
+      function firstCitation(payload) {
+        if ((payload.answer || "").trim().startsWith(fallbackAnswer)) {
+          return "No citation returned.";
+        }
+
+        const firstSource = (payload.sources || [])[0];
+        return firstSource ? firstSource.source : "No citation returned.";
+      }
+
+      function resultJudgment(question, key) {
+        return judgments[question]?.[key] || "Compare the answer and citation with the retrieved details.";
+      }
+
+      function renderResult(panel, payload, question, key) {
+        panel.answer.textContent = payload.answer || "No answer returned.";
+        panel.citation.textContent = firstCitation(payload);
+        panel.judgment.textContent = resultJudgment(question, key);
+        panel.focus.textContent = payload.learning_focus || "No retrieval focus for this answer.";
+        panel.answer.classList.remove("empty");
+        panel.citation.classList.remove("empty");
+        panel.judgment.classList.remove("empty");
+        panel.focus.classList.remove("empty");
+        renderSources(panel.sources, payload.sources || []);
+      }
+
+      function renderError(panel, error) {
+        panel.answer.textContent = `${panel.label} request failed: ${error.message}`;
+        panel.citation.textContent = "No citation returned.";
+        panel.judgment.textContent = "The request failed before retrieval could be compared.";
+        panel.focus.textContent = "No retrieval analysis available.";
+        panel.answer.classList.remove("empty");
+        panel.citation.classList.add("empty");
+        panel.judgment.classList.add("empty");
+        panel.focus.classList.add("empty");
+        renderSources(panel.sources, []);
+      }
+
+      async function askBackend(panel, question) {
+        const response = await fetch(`${panel.baseUrl}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: question }),
         });
-      });
+        const contentType = response.headers.get("content-type") || "";
+        const payload = contentType.includes("application/json")
+          ? await response.json()
+          : { detail: await response.text() };
+        if (!response.ok) {
+          throw new Error(payload.detail || "Chat request failed.");
+        }
+        return payload;
+      }
+
+      async function compare(question) {
+        currentQuestion.textContent = question;
+        takeaway.textContent = "Running both strategies...";
+        setStatus("Retrieving from both strategies...");
+        setLoading(panels.markdown);
+        setLoading(panels.vector);
+
+        const results = await Promise.allSettled([
+          askBackend(panels.markdown, question),
+          askBackend(panels.vector, question),
+        ]);
+
+        const markdownResult = results[0];
+        const vectorResult = results[1];
+
+        if (markdownResult.status === "fulfilled") {
+          renderResult(panels.markdown, markdownResult.value, question, "markdown");
+        } else {
+          renderError(panels.markdown, markdownResult.reason);
+        }
+
+        if (vectorResult.status === "fulfilled") {
+          renderResult(panels.vector, vectorResult.value, question, "vector");
+        } else {
+          renderError(panels.vector, vectorResult.reason);
+        }
+
+        setStatus("Ready.");
+        takeaway.textContent = selectedTakeaway || "Takeaway: compare the answer, cited source, and retrieval analysis before trusting the response.";
+      }
 
       form.addEventListener("submit", (event) => {
         event.preventDefault();
         const question = input.value.trim();
-        if (!question) {
-          return;
+        if (question) {
+          selectedTakeaway = takeaways[question] || "";
+          compare(question);
         }
-        input.value = "";
-        ask(question);
       });
 
       document.querySelectorAll("[data-query]").forEach((button) => {
         button.addEventListener("click", () => {
-          input.value = button.dataset.query;
+          const question = button.dataset.query;
+          input.value = question;
+          currentQuestion.textContent = question;
+          selectedTakeaway = takeaways[question] || "";
+          takeaway.textContent = "Press Compare to reveal the demo takeaway.";
+          resetComparison();
+          setStatus("Question selected. Press Compare to run both strategies.");
           input.focus();
         });
       });
