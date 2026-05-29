@@ -239,6 +239,39 @@ Approved refunds are processed within 5-7 business days.
             self.assertIn("5-7 business days", response["answer"])
             self.assertIn("refund_policy.md#refund-timeline", response["answer"])
 
+    def test_query_does_not_append_source_to_fallback_answer(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            indexer.INDEX_DIR = Path(tmpdir) / ".kb" / "faiss_index"
+            docs_dir = Path(tmpdir) / "docs"
+            write_doc(
+                docs_dir,
+                "refund_policy.md",
+                """# Refund Policy
+
+## Refund Timeline
+
+Approved refunds are processed within 5-7 business days.
+""",
+            )
+            indexer.build_index(docs_dir)
+
+            import app.retrieval as retrieval
+
+            class LlmWithFallback:
+                def invoke(self, messages):
+                    class Response:
+                        content = "I cannot confirm from the knowledge base."
+
+                    return Response()
+
+            previous_llm = retrieval._llm
+            retrieval._llm = LlmWithFallback()
+            response = query('Which section contains the exact phrase "1-2 business days"?')
+            retrieval._llm = previous_llm
+
+            self.assertEqual(response["answer"], "I cannot confirm from the knowledge base.")
+            self.assertNotIn("refund_policy.md#refund-timeline", response["answer"])
+
     def test_query_does_not_append_top_source_when_llm_cites_valid_context_source(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             indexer.INDEX_DIR = Path(tmpdir) / ".kb" / "faiss_index"
