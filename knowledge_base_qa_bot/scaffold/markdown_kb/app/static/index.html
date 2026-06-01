@@ -642,6 +642,9 @@
           docList.textContent = error.message;
           docList.classList.add("empty");
         }
+
+        const firstSource = (payload.sources || [])[0];
+        return firstSource ? firstSource.source : "No citation returned.";
       }
 
       function setLoading(panel) {
