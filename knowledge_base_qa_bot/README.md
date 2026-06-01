@@ -2,7 +2,7 @@
 
 ## Demo
 
-![Knowledge Base Q&A Bot demo](images/knowledge_base_qu_bot.gif)
+![Knowledge Base Q&A Bot demo](images/knowledge_base_qa_bot.gif)
 
 ## How to Use
 
