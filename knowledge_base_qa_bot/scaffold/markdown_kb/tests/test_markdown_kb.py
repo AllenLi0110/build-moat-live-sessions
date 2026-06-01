@@ -289,6 +289,41 @@ Expedited shipping usually takes 1-2 business days. Expedited shipping fees are 
             else:
                 os.environ["GROQ_API_KEY"] = previous_key
 
+    def test_documents_endpoint_returns_indexed_docs(self):
+        from fastapi.testclient import TestClient
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            docs_dir = Path(tmpdir) / "docs"
+            indexer.INDEX_PATH = Path(tmpdir) / ".kb" / "index.json"
+            write_doc(
+                docs_dir,
+                "refund_policy.md",
+                """# Refund Policy
+
+## Refund Timeline
+
+Approved refunds are processed within 5-7 business days.
+""",
+            )
+            indexer.build_index(docs_dir)
+
+            client = TestClient(app)
+            response = client.get("/documents")
+
+            self.assertEqual(response.status_code, 200)
+            payload = response.json()
+            self.assertEqual(payload["files_indexed"], 1)
+            self.assertEqual(payload["sections_indexed"], 1)
+            self.assertEqual(payload["documents"][0]["file"], "refund_policy.md")
+            self.assertEqual(
+                payload["documents"][0]["sections"][0]["source"],
+                "refund_policy.md#refund-timeline",
+            )
+            self.assertEqual(
+                payload["documents"][0]["sections"][0]["heading"],
+                "Refund Policy > Refund Timeline",
+            )
+
     def test_browser_ui_loads(self):
         from fastapi.testclient import TestClient
 
@@ -298,6 +333,11 @@ Expedited shipping usually takes 1-2 business days. Expedited shipping fees are 
         self.assertEqual(response.status_code, 200)
         self.assertIn("Knowledge Base Q&A Bot", response.text)
         self.assertIn("Index is prepared when each server starts.", response.text)
+        self.assertIn("Indexed Docs", response.text)
+        self.assertIn("loadDocuments", response.text)
+        self.assertIn("displayAnswer", response.text)
+        self.assertIn("replaceAll(`[${source.source}]`, \"\")", response.text)
+        self.assertIn("replaceAll(`[Source: ${source.source}]`, \"\")", response.text)
 
 
 if __name__ == "__main__":

@@ -156,6 +156,52 @@
         margin-top: 16px;
       }
 
+      .doc-panel {
+        border-top: 1px solid var(--line);
+        margin-top: 16px;
+        padding-top: 14px;
+      }
+
+      .doc-summary {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 6px 0 10px;
+      }
+
+      .doc-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .doc-card {
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 10px;
+      }
+
+      .doc-card strong {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 6px;
+        overflow-wrap: anywhere;
+      }
+
+      .doc-card ul {
+        display: grid;
+        gap: 4px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .doc-card li {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
       textarea {
         width: 100%;
         min-height: 88px;
@@ -392,6 +438,12 @@
             <textarea id="queryInput" aria-label="Question" placeholder="Optional custom question..."></textarea>
             <button type="submit">Compare</button>
           </form>
+
+          <section class="doc-panel" aria-labelledby="documentsTitle">
+            <h2 id="documentsTitle">Indexed Docs</h2>
+            <p id="docSummary" class="doc-summary">Loading document index...</p>
+            <div id="docList" class="doc-list empty">No documents loaded.</div>
+          </section>
         </aside>
 
         <section class="panel">
@@ -468,6 +520,8 @@
       const input = document.querySelector("#queryInput");
       const currentQuestion = document.querySelector("#currentQuestion");
       const takeaway = document.querySelector("#takeaway");
+      const docSummary = document.querySelector("#docSummary");
+      const docList = document.querySelector("#docList");
       let selectedTakeaway = "";
 
       const takeaways = {
@@ -545,6 +599,54 @@
         }
       }
 
+      function renderDocuments(payload) {
+        const documents = payload.documents || [];
+        docSummary.textContent = `${payload.files_indexed || 0} files, ${payload.sections_indexed || 0} sections indexed.`;
+        docList.innerHTML = "";
+        docList.classList.toggle("empty", !documents.length);
+
+        if (!documents.length) {
+          docList.textContent = "No documents indexed yet.";
+          return;
+        }
+
+        for (const doc of documents) {
+          const card = document.createElement("div");
+          card.className = "doc-card";
+
+          const title = document.createElement("strong");
+          title.textContent = doc.file;
+
+          const sections = document.createElement("ul");
+          for (const section of doc.sections || []) {
+            const item = document.createElement("li");
+            item.textContent = section.heading || section.source;
+            sections.appendChild(item);
+          }
+
+          card.append(title, sections);
+          docList.appendChild(card);
+        }
+      }
+
+      async function loadDocuments() {
+        try {
+          const response = await fetch("/documents");
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload.detail || "Document index request failed.");
+          }
+          renderDocuments(payload);
+        } catch (error) {
+          docSummary.textContent = "Could not load document index.";
+          docList.textContent = error.message;
+          docList.classList.add("empty");
+        }
+
+        const firstSource = (payload.sources || [])[0];
+        return firstSource ? firstSource.source : "No citation returned.";
+      }
+
       function setLoading(panel) {
         panel.answer.textContent = "Retrieving...";
         panel.citation.textContent = "Waiting for source...";
@@ -585,12 +687,21 @@
         return firstSource ? firstSource.source : "No citation returned.";
       }
 
+      function displayAnswer(payload) {
+        let answer = payload.answer || "No answer returned.";
+        for (const source of payload.sources || []) {
+          answer = answer.replaceAll(`[${source.source}]`, "");
+          answer = answer.replaceAll(`[Source: ${source.source}]`, "");
+        }
+        return answer.replace(/\s+/g, " ").trim();
+      }
+
       function resultJudgment(question, key) {
         return judgments[question]?.[key] || "Compare the answer and citation with the retrieved details.";
       }
 
       function renderResult(panel, payload, question, key) {
-        panel.answer.textContent = payload.answer || "No answer returned.";
+        panel.answer.textContent = displayAnswer(payload);
         panel.citation.textContent = firstCitation(payload);
         panel.judgment.textContent = resultJudgment(question, key);
         panel.focus.textContent = payload.learning_focus || "No retrieval focus for this answer.";
@@ -681,6 +792,8 @@
           input.focus();
         });
       });
+
+      loadDocuments();
     </script>
   </body>
 </html>
