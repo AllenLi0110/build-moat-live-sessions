@@ -6,6 +6,22 @@ class IndexResponse(BaseModel):
     sections_indexed: int
 
 
+class DocumentSection(BaseModel):
+    source: str
+    heading: str
+
+
+class DocumentInfo(BaseModel):
+    file: str
+    sections: list[DocumentSection]
+
+
+class DocumentsResponse(BaseModel):
+    files_indexed: int
+    sections_indexed: int
+    documents: list[DocumentInfo]
+
+
 class ChatRequest(BaseModel):
     query: str
 

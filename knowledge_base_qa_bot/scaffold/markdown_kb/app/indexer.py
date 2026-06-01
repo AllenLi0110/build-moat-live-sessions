@@ -187,6 +187,25 @@ def load_index_json(index_path: Optional[Path] = None) -> tuple[int, int]:
     return files_indexed, len(sections)
 
 
+def list_documents() -> list[dict]:
+    documents: dict[str, list[dict]] = {}
+    for section in sections:
+        documents.setdefault(section.file, []).append(
+            {
+                "source": section.id,
+                "heading": " > ".join(section.heading_path),
+            }
+        )
+
+    return [
+        {
+            "file": file,
+            "sections": file_sections,
+        }
+        for file, file_sections in sorted(documents.items())
+    ]
+
+
 def build_index(docs_dir: Path = DOCS_DIR) -> tuple[int, int]:
     global sections
 
